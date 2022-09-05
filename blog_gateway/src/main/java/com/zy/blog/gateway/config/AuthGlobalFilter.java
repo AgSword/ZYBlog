@@ -51,17 +51,20 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         if (token.startsWith(AuthConstants.JWT_Bear)){
             String  tokensimple = token.replace(AuthConstants.JWT_Bear, Strings.EMPTY);
             try {
+                // 从token中解析出jws对象
                 JWSObject  jwsObject = JWSObject.parse(tokensimple);
+                // 提取出jws对象中负载的信息
                 payload = jwsObject.getPayload().toString();
             } catch (ParseException e) {
                 e.printStackTrace();
             }
             // 针对token(登出、修改密码)校验
             JSONObject jsonObject = JSONUtil.parseObj(payload);
-            jti= jsonObject.getStr(AuthConstants.JWT_JTI); // JWT唯一标识
+            jti= jsonObject.getStr(AuthConstants.JWT_JTI); // JWT唯一标识  jwt id
         }
+        // 黑名单存储在redis中
         Boolean hadLogout =redisTemplate.hasKey(AuthConstants.Token_black_prefix+ jti);
-        if(hadLogout){
+        if(hadLogout){  // 如果处于黑名单中
             ServerHttpResponse response = exchange.getResponse();
             response.setStatusCode(HttpStatus.OK);
             response.getHeaders().set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);

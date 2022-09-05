@@ -93,6 +93,9 @@ public class ResourceServerConfig {
     /**
      * @return
      *
+     * 当gateway充当OAuth2ResourceServer的时候，会出现hasRole配置无效的问题。
+     * 原因来自于ServerHttpSecurity.OAuth2ResourceServerSpec.JwtSpec中默认的ReactiveAuthenticationManager没有将jwt中authorities 的负载部分当做Authentication的权限。
+     *
      * ServerHttpSecurity没有将jwt中authorities的负载部分当做Authentication
      * 需要把jwt的Claim中的authorities加入
      * 方案：重新定义R 权限管理器，默认转换器JwtGrantedAuthoritiesConverter

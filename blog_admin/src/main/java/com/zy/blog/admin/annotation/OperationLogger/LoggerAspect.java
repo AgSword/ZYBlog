@@ -51,9 +51,9 @@ public class LoggerAspect {
      */
     Date startTime;
 
+    // 切入点
     @Pointcut(value = "@annotation(operationLogger)")
     public void pointcut(OperationLogger operationLogger) {
-
     }
 
     @Around(value = "pointcut(operationLogger)")

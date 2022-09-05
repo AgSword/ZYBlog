@@ -28,7 +28,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
    // TokenEndpoint
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable()
+        http.csrf().disable() // 禁用csrf
                 .authorizeRequests()
                 .antMatchers("/login*").permitAll()
                 .antMatchers("/getPublicKey").permitAll()

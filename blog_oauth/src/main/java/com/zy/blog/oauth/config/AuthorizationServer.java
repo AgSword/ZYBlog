@@ -53,7 +53,8 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    @Autowired private JwtAccessTokenConverter accessTokenConverter;
+    @Autowired
+    private JwtAccessTokenConverter accessTokenConverter;
 
     @Autowired
     PasswordEncoder passwordEncoder;
@@ -77,15 +78,21 @@ public class AuthorizationServer extends AuthorizationServerConfigurerAdapter {
         return clientDetailsService;
     }
 
+    /**
+     * 授权码模式
+     * @param dataSource
+     * @return
+     */
     @Bean
     public AuthorizationCodeServices authorizationCodeServices(DataSource dataSource) {
         //new InMemoryAuthorizationCodeServices();//设置授权码模式的授权码如何 存取，暂时采用内存方式
         return new JdbcAuthorizationCodeServices(dataSource);//设置授权码模式的授权码如何存取
     }
 
-    /*
-   Token服务，用于token的创建，刷新，获取操作
-   * */
+    /**
+     * Token服务，用于token的创建，刷新，获取操作
+     * @return
+     */
     @Bean
     public AuthorizationServerTokenServices tokenService(){
         //AuthorizationServerTokenServices的默认实现

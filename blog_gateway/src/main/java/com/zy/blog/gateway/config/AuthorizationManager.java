@@ -102,6 +102,51 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
         return null;
     }
 
+
+    @Override
+    // 判断当前用户是否具有访问路径的权限，基于用户拥有的路径资源进行考量
+    public Mono<AuthorizationDecision> check(Mono<Authentication> mono, AuthorizationContext authorizationContext) {
+        ServerHttpRequest request = authorizationContext.getExchange().getRequest();
+        String requestPath = request.getURI().getPath();
+        PathMatcher pathMatcher = new AntPathMatcher();
+
+        // 对应跨域的预检请求直接放行
+        if (request.getMethod() == HttpMethod.OPTIONS) {
+            return Mono.just(new AuthorizationDecision(true));
+        }
+
+        // 是否直接放行
+        if (permitAll(requestPath)) {
+            return Mono.just(new AuthorizationDecision(true));
+        }
+
+        // token为空拒绝访问
+        String token = request.getHeaders().getFirst("Authorization");
+        if (StrUtil.isBlank(token)) {
+            return Mono.just(new AuthorizationDecision(false));
+        }
+
+     /*   Mono<AuthorizationDecision> authorizationDecisionMono = mono
+                .filter(Authentication::isAuthenticated)
+                .flatMapIterable(Authentication::getAuthorities)
+                .map(GrantedAuthority::getAuthority)
+                .any(roleId -> {
+                    // roleId是请求用户的角色(格式:ROLE_{roleId})，authorities是请求资源所需要角色的集合
+                    log.info("访问路径：{}", path);
+                    log.info("用户角色信息：{}", roleId);
+                    log.info("资源需要权限authorities：{}", authorities);
+                    return authorities.contains(roleId);
+                })
+                .map(AuthorizationDecision::new)
+                .defaultIfEmpty(new AuthorizationDecision(false));
+        return authorizationDecisionMono;*/
+
+        return mono.map(auth -> {
+            return new AuthorizationDecision(checkAuthorities(auth, requestPath));
+        }).defaultIfEmpty(new AuthorizationDecision(false));
+
+    }
+
     /**
      * 校验是否属于静态资源
      * @param requestPath 请求路径
@@ -145,7 +190,7 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
                     //解析角色
                     List<String> listRoleName = authorities.parallelStream()
                             .map(s -> s.getAuthority().replace("role_", "")).parallel().collect(Collectors.toList());
-                    Admin admin = adminService.getById(adminUid);
+                    Admin admin = adminService.getById(adminUid);  // 获取管理员信息
                     QueryWrapper<Role> queryWrapper = new QueryWrapper();
                     queryWrapper.in("role_name", listRoleName);
                     queryWrapper.eq(SQLConf.STATUS, 1);
@@ -169,6 +214,7 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
                             visitMap.put(item.getUrl(), item.getUrl());
                         }
                     }
+                    // 存储的是admin有权得到的菜单的url
                     perCache.put(RedisConf.ADMIN_VISIT_MENU + RedisConf.SEGMENTATION+ adminUid ,visitMap);
                     redisUtil.setEx(RedisConf.ADMIN_VISIT_MENU + SysConf.REDIS_SEGMENTATION + adminUid, JsonUtils.objectToJson(visitMap), 1, TimeUnit.HOURS);
                 }
@@ -198,46 +244,5 @@ public class AuthorizationManager implements ReactiveAuthorizationManager<Author
         return rePath;
     }
 
-    @Override
-    public Mono<AuthorizationDecision> check(Mono<Authentication> mono, AuthorizationContext authorizationContext) {
-        ServerHttpRequest request = authorizationContext.getExchange().getRequest();
-        String requestPath = request.getURI().getPath();
-        PathMatcher pathMatcher = new AntPathMatcher();
 
-        // 对应跨域的预检请求直接放行
-        if (request.getMethod() == HttpMethod.OPTIONS) {
-            return Mono.just(new AuthorizationDecision(true));
-        }
-
-        // 是否直接放行
-        if (permitAll(requestPath)) {
-            return Mono.just(new AuthorizationDecision(true));
-        }
-
-        // token为空拒绝访问
-        String token = request.getHeaders().getFirst("Authorization");
-        if (StrUtil.isBlank(token)) {
-            return Mono.just(new AuthorizationDecision(false));
-        }
-
-     /*   Mono<AuthorizationDecision> authorizationDecisionMono = mono
-                .filter(Authentication::isAuthenticated)
-                .flatMapIterable(Authentication::getAuthorities)
-                .map(GrantedAuthority::getAuthority)
-                .any(roleId -> {
-                    // roleId是请求用户的角色(格式:ROLE_{roleId})，authorities是请求资源所需要角色的集合
-                    log.info("访问路径：{}", path);
-                    log.info("用户角色信息：{}", roleId);
-                    log.info("资源需要权限authorities：{}", authorities);
-                    return authorities.contains(roleId);
-                })
-                .map(AuthorizationDecision::new)
-                .defaultIfEmpty(new AuthorizationDecision(false));
-        return authorizationDecisionMono;*/
-
-        return mono.map(auth -> {
-            return new AuthorizationDecision(checkAuthorities(auth, requestPath));
-        }).defaultIfEmpty(new AuthorizationDecision(false));
-
-    }
 }

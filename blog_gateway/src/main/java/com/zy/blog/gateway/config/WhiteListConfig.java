@@ -13,6 +13,7 @@ import java.util.List;
 //@ConfigurationProperties(prefix = "whitelist")
 public class WhiteListConfig {
     private List<String> urls=new ArrayList<>();
+    // 白名单定义的规则，后台服务中的登录请求，其他服务的请求
     public WhiteListConfig()  {
         urls.add("/admin/login");
         urls.add("/admin/getInfo");
